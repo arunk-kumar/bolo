@@ -1,0 +1,126 @@
+# ══════════════════════════════════════════════════════════════════
+# Hindi pack (hi) — word translations
+# ══════════════════════════════════════════════════════════════════
+# Each entry: `word` (Devanagari) + `transliteration` (Roman) + audio path.
+# The dual-script pattern serves:
+#   - Native Hindi readers (parents, grandparents)
+#   - Roman-only speakers (diaspora, urban India English-medium families)
+# ══════════════════════════════════════════════════════════════════
+
+# ─── जानवर  (animals) ────────────────────────────────────────────
+word_001:
+  word: बिल्ली
+  transliteration: billi
+  audio: audio/word_001.mp3
+
+word_002:
+  word: कुत्ता
+  transliteration: kutta
+  audio: audio/word_002.mp3
+
+word_003:
+  word: गाय
+  transliteration: gaay
+  audio: audio/word_003.mp3
+
+word_004:
+  word: चिड़िया
+  transliteration: chidiya
+  audio: audio/word_004.mp3
+
+word_005:
+  word: हाथी
+  transliteration: haathi
+  audio: audio/word_005.mp3
+
+# ─── खाना  (food) ────────────────────────────────────────────────
+word_006:
+  word: दूध
+  transliteration: doodh
+  audio: audio/word_006.mp3
+
+word_007:
+  # "Kela" is the common Hindi word for banana. Widely understood.
+  word: केला
+  transliteration: kela
+  audio: audio/word_007.mp3
+
+word_008:
+  word: पानी
+  transliteration: paani
+  audio: audio/word_008.mp3
+
+word_009:
+  # Native word — first-language for most Indian households.
+  word: रोटी
+  transliteration: roti
+  audio: audio/word_009.mp3
+
+word_010:
+  # "Seb" is the Hindi word; "apple" is also widely used as loanword.
+  # We use "seb" here to keep the Hindi track authentic — parents can
+  # code-switch to "apple" naturally if needed.
+  word: सेब
+  transliteration: seb
+  audio: audio/word_010.mp3
+
+# ─── परिवार  (family) ────────────────────────────────────────────
+word_011:
+  # "Mummy" is more common than "mama" in modern Indian usage; but "ma"
+  # is universally understood and simpler for a first word. Using "ma".
+  word: माँ
+  transliteration: maa
+  audio: audio/word_011.mp3
+
+word_012:
+  # "Papa" and "pita" both work; "papa" is what toddlers actually say.
+  word: पापा
+  transliteration: papa
+  audio: audio/word_012.mp3
+
+word_013:
+  # Nani = maternal grandmother — the specifically-relational term
+  # Indian children learn early. NOT translated as generic "dadi" (paternal).
+  word: नानी
+  transliteration: nani
+  audio: audio/word_013.mp3
+
+word_014:
+  # Nana = maternal grandfather.
+  word: नाना
+  transliteration: nana
+  audio: audio/word_014.mp3
+
+word_015:
+  # "Bacha" for baby/child; more commonly used than transliterations of "baby".
+  word: बच्चा
+  transliteration: bachcha
+  audio: audio/word_015.mp3
+
+# ─── शरीर  (body) ────────────────────────────────────────────────
+word_016:
+  word: आँख
+  transliteration: aankh
+  audio: audio/word_016.mp3
+
+word_017:
+  word: नाक
+  transliteration: naak
+  audio: audio/word_017.mp3
+
+word_018:
+  word: हाथ
+  transliteration: haath
+  audio: audio/word_018.mp3
+
+word_019:
+  # "Pair" = foot/leg. Note pronunciation is closer to "pey-r" in Hindi,
+  # not the English "pair" (couple).
+  word: पैर
+  transliteration: pair
+  audio: audio/word_019.mp3
+
+word_020:
+  word: मुँह
+  transliteration: munh
+  audio: audio/word_020.mp3

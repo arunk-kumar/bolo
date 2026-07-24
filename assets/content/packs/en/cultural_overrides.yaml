@@ -1,0 +1,11 @@
+# ══════════════════════════════════════════════════════════════════
+# English pack — cultural overrides
+# ══════════════════════════════════════════════════════════════════
+# Words from core/words.yaml that this pack skips or substitutes.
+# ══════════════════════════════════════════════════════════════════
+
+# Words to skip entirely for this locale.
+skip: []
+
+# Substitute one word_id with another (both must exist in core/words.yaml).
+substitute: {}

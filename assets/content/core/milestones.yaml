@@ -1,0 +1,91 @@
+# ══════════════════════════════════════════════════════════════════
+# Bolo — Developmental milestones (universal, ASHA-derived)
+# ══════════════════════════════════════════════════════════════════
+#
+# Milestones are shown to parents in the MilestoneScreen as a
+# CONVERSATION GUIDE — NOT a clinical assessment. Each milestone is a
+# parent-reported checklist item.
+#
+# Source: ASHA developmental norms for expressive language,
+# summarized here in plain-language form.
+# See: https://www.asha.org/public/speech/development/
+#
+# Translation of the parent-facing text lives in each pack's
+# ../packs/<locale>/milestones.yaml.
+# ══════════════════════════════════════════════════════════════════
+
+- id: ms_18mo_first_words
+  age_range_months: [12, 18]
+  category: expressive
+  # English source string — packs may override
+  text_en: "Says at least 5–10 recognizable single words (mama, papa, milk, dog, etc.)"
+
+- id: ms_18mo_imitates_sounds
+  age_range_months: [12, 18]
+  category: expressive
+  text_en: "Tries to imitate simple sounds and words after you say them"
+
+- id: ms_24mo_50_words
+  age_range_months: [18, 24]
+  category: expressive
+  text_en: "Uses about 50 different words spontaneously"
+
+- id: ms_24mo_two_word_phrases
+  age_range_months: [18, 24]
+  category: expressive
+  text_en: 'Combines two words into short phrases ("more milk", "no want")'
+
+- id: ms_30mo_names_body_parts
+  age_range_months: [24, 30]
+  category: expressive
+  text_en: "Names at least 3 body parts when asked"
+
+- id: ms_30mo_uses_pronouns
+  age_range_months: [24, 30]
+  category: expressive
+  text_en: 'Starts using pronouns like "me", "you", "mine"'
+
+- id: ms_36mo_three_word_sentences
+  age_range_months: [30, 36]
+  category: expressive
+  text_en: "Uses 3-word sentences most of the time"
+
+- id: ms_36mo_asks_what_where
+  age_range_months: [30, 36]
+  category: expressive
+  text_en: 'Asks simple "what" and "where" questions'
+
+- id: ms_36mo_understood_by_family
+  age_range_months: [30, 36]
+  category: intelligibility
+  text_en: "Family members understand most (75%+) of what your child says"
+
+- id: ms_48mo_tells_short_story
+  age_range_months: [36, 48]
+  category: expressive
+  text_en: "Can tell a short story or describe a recent event in a few sentences"
+
+- id: ms_48mo_asks_why_how
+  age_range_months: [36, 48]
+  category: expressive
+  text_en: 'Asks "why" and "how" questions'
+
+- id: ms_48mo_uses_plurals
+  age_range_months: [36, 48]
+  category: expressive
+  text_en: "Uses plurals (dogs, books) and past tense (walked, ate) correctly most of the time"
+
+- id: ms_60mo_understood_by_strangers
+  age_range_months: [48, 60]
+  category: intelligibility
+  text_en: "Strangers understand almost everything your child says"
+
+- id: ms_60mo_full_sentences
+  age_range_months: [48, 60]
+  category: expressive
+  text_en: "Speaks in full sentences with correct grammar most of the time"
+
+- id: ms_60mo_takes_turns
+  age_range_months: [48, 60]
+  category: pragmatic
+  text_en: "Takes turns in conversation, asks and answers questions"

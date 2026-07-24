@@ -1,0 +1,10 @@
+# ══════════════════════════════════════════════════════════════════
+# Hindi pack (hi) — cultural overrides
+# ══════════════════════════════════════════════════════════════════
+# No overrides at 20-word MVP. As the vocabulary grows, cultural-fit
+# words (raccoon, bagel, school bus, etc.) will land here as either
+# skips or substitutions.
+# ══════════════════════════════════════════════════════════════════
+
+skip: []
+substitute: {}

@@ -1,0 +1,33 @@
+# ══════════════════════════════════════════════════════════════════
+# Bolo language pack manifest — English (en)
+# ══════════════════════════════════════════════════════════════════
+locale: en
+name_en: English
+name_native: English
+script: Latin
+text_direction: ltr
+font_family: system                   # Latin — system font is fine
+supported_regions: [US, GB, IN, AU, CA, NZ]
+maturity: alpha
+
+# ── TTS configuration ─────────────────────────────────────────────
+# Provider used by scripts/generate_tts.py to pre-generate audio.
+# `piper` = Piper TTS (open-source, MIT license, runs locally, free).
+# Alternative providers: azure, elevenlabs.
+tts_voice_provider: piper
+tts_voice_id: en_US-amy-medium         # child-friendly female voice
+tts_voice_style: default
+
+# ── Wonder-tier theme ─────────────────────────────────────────────
+# Used by Tier-3 rewards to pick culturally-themed variants.
+# Options: butterfly | peacock | fireflies | rainbow | monsoon_stars
+wonder_theme: butterfly
+
+# ── Coverage ──────────────────────────────────────────────────────
+# Automatically computed later by a build script; not authored by hand.
+# Placeholder here for structure.
+coverage:
+  words_translated: 20
+  words_audio_generated: 0             # will bump to 20 after TTS run
+  words_skipped: 0
+  last_updated: 2026-07-25

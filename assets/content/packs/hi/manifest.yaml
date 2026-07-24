@@ -1,0 +1,31 @@
+# ══════════════════════════════════════════════════════════════════
+# Bolo language pack manifest — Hindi (hi)
+# ══════════════════════════════════════════════════════════════════
+locale: hi
+name_en: Hindi
+name_native: हिन्दी
+script: Devanagari
+text_direction: ltr
+font_family: NotoSansDevanagari       # bundled in assets/fonts/
+supported_regions: [IN, NP]
+maturity: alpha
+
+# ── TTS configuration ─────────────────────────────────────────────
+# Azure hi-IN-SwaraNeural with 'cheerful' style — best available for
+# emotive child-directed Hindi. Free tier (500K chars/mo) covers
+# hundreds of words easily.
+tts_voice_provider: azure
+tts_voice_id: hi-IN-SwaraNeural
+tts_voice_style: cheerful
+
+# ── Wonder-tier theme ─────────────────────────────────────────────
+# Peacock — India's national bird; widely recognized visual for
+# celebration/wonder in Indian childhood imagery.
+wonder_theme: peacock
+
+# ── Coverage ──────────────────────────────────────────────────────
+coverage:
+  words_translated: 20
+  words_audio_generated: 0             # will bump to 20 after TTS run
+  words_skipped: 0
+  last_updated: 2026-07-25

@@ -1,0 +1,208 @@
+# ══════════════════════════════════════════════════════════════════
+# Bolo — Core word list (language-agnostic)
+# ══════════════════════════════════════════════════════════════════
+#
+# Each entry defines the structural properties of one word:
+#   - id                     : stable identifier (word_NNN)
+#   - category               : maps to scene background & session grouping
+#   - age_band               : "2-3" | "3-4" | "4-5"
+#   - phoneme_targets_ipa    : list of IPA phonemes (drives focused-stim game)
+#   - image                  : path to word illustration (relative to assets/)
+#   - cdi_frequency_rank     : rank in MacArthur-Bates CDI Words & Gestures
+#   - asha_milestone_age_months : typical age of production per ASHA
+#   - universal              : true = valid in every language pack by default
+#                              false = each pack decides (opt-in in pack manifest)
+#
+# Translation and audio for each word live in the per-language packs
+# under ../packs/<locale>/words.yaml.
+#
+# MVP starter set: 20 words, balanced across animals/food/family/body.
+# ══════════════════════════════════════════════════════════════════
+
+# ─────────────── ANIMALS (5) ───────────────
+- id: word_001
+  category: animals
+  age_band: "2-3"
+  phoneme_targets_ipa: [k, æ, t]
+  image: images/words/word_001_cat.png
+  cdi_frequency_rank: 45
+  asha_milestone_age_months: 18
+  universal: true
+
+- id: word_002
+  category: animals
+  age_band: "2-3"
+  phoneme_targets_ipa: [d, ɔ, g]
+  image: images/words/word_002_dog.png
+  cdi_frequency_rank: 21
+  asha_milestone_age_months: 18
+  universal: true
+
+- id: word_003
+  category: animals
+  age_band: "2-3"
+  phoneme_targets_ipa: [k, aʊ]
+  image: images/words/word_003_cow.png
+  cdi_frequency_rank: 78
+  asha_milestone_age_months: 20
+  universal: true
+
+- id: word_004
+  category: animals
+  age_band: "2-3"
+  phoneme_targets_ipa: [b, ɜː, d]
+  image: images/words/word_004_bird.png
+  cdi_frequency_rank: 62
+  asha_milestone_age_months: 20
+  universal: true
+
+- id: word_005
+  category: animals
+  age_band: "3-4"
+  phoneme_targets_ipa: [ɛ, l, ə, f, ə, n, t]
+  image: images/words/word_005_elephant.png
+  cdi_frequency_rank: 154
+  asha_milestone_age_months: 30
+  universal: true
+
+# ─────────────── FOOD (5) ───────────────
+- id: word_006
+  category: food
+  age_band: "2-3"
+  phoneme_targets_ipa: [m, ɪ, l, k]
+  image: images/words/word_006_milk.png
+  cdi_frequency_rank: 12
+  asha_milestone_age_months: 15
+  universal: true
+
+- id: word_007
+  category: food
+  age_band: "2-3"
+  phoneme_targets_ipa: [b, ə, n, ɑː, n, ə]
+  image: images/words/word_007_banana.png
+  cdi_frequency_rank: 34
+  asha_milestone_age_months: 20
+  universal: true
+
+- id: word_008
+  category: food
+  age_band: "2-3"
+  phoneme_targets_ipa: [w, ɔː, t, ə]
+  image: images/words/word_008_water.png
+  cdi_frequency_rank: 18
+  asha_milestone_age_months: 18
+  universal: true
+
+- id: word_009
+  category: food
+  age_band: "2-3"
+  # Chapati / roti — India-familiar flatbread. English pack will label as
+  # "roti" (loanword, widely used) rather than translate to bread.
+  phoneme_targets_ipa: [r, oʊ, t, i]
+  image: images/words/word_009_roti.png
+  cdi_frequency_rank: null       # not in CDI (Indian-context word)
+  asha_milestone_age_months: 20
+  universal: false               # each pack decides
+
+- id: word_010
+  category: food
+  age_band: "3-4"
+  phoneme_targets_ipa: [ʌ, p, əl]
+  image: images/words/word_010_apple.png
+  cdi_frequency_rank: 41
+  asha_milestone_age_months: 22
+  universal: true
+
+# ─────────────── FAMILY (5) ───────────────
+- id: word_011
+  category: family
+  age_band: "2-3"
+  phoneme_targets_ipa: [m, ɑː, m, ɑː]
+  image: images/words/word_011_mama.png
+  cdi_frequency_rank: 1
+  asha_milestone_age_months: 12
+  universal: true
+
+- id: word_012
+  category: family
+  age_band: "2-3"
+  phoneme_targets_ipa: [p, ɑː, p, ɑː]
+  image: images/words/word_012_papa.png
+  cdi_frequency_rank: 2
+  asha_milestone_age_months: 12
+  universal: true
+
+- id: word_013
+  category: family
+  age_band: "2-3"
+  # Maternal grandmother — nani (Hindi) / grandma (English)
+  phoneme_targets_ipa: [n, ɑː, n, i]
+  image: images/words/word_013_nani.png
+  cdi_frequency_rank: null       # cultural — English pack uses "grandma"
+  asha_milestone_age_months: 20
+  universal: true
+
+- id: word_014
+  category: family
+  age_band: "2-3"
+  # Maternal grandfather — nana (Hindi) / grandpa (English)
+  phoneme_targets_ipa: [n, ɑː, n, ɑː]
+  image: images/words/word_014_nana.png
+  cdi_frequency_rank: null
+  asha_milestone_age_months: 20
+  universal: true
+
+- id: word_015
+  category: family
+  age_band: "3-4"
+  phoneme_targets_ipa: [b, eɪ, b, i]
+  image: images/words/word_015_baby.png
+  cdi_frequency_rank: 8
+  asha_milestone_age_months: 15
+  universal: true
+
+# ─────────────── BODY (5) ───────────────
+- id: word_016
+  category: body
+  age_band: "2-3"
+  phoneme_targets_ipa: [aɪ]
+  image: images/words/word_016_eye.png
+  cdi_frequency_rank: 55
+  asha_milestone_age_months: 22
+  universal: true
+
+- id: word_017
+  category: body
+  age_band: "2-3"
+  phoneme_targets_ipa: [n, oʊ, z]
+  image: images/words/word_017_nose.png
+  cdi_frequency_rank: 47
+  asha_milestone_age_months: 22
+  universal: true
+
+- id: word_018
+  category: body
+  age_band: "2-3"
+  phoneme_targets_ipa: [h, æ, n, d]
+  image: images/words/word_018_hand.png
+  cdi_frequency_rank: 38
+  asha_milestone_age_months: 22
+  universal: true
+
+- id: word_019
+  category: body
+  age_band: "2-3"
+  phoneme_targets_ipa: [f, ʊ, t]
+  image: images/words/word_019_foot.png
+  cdi_frequency_rank: 66
+  asha_milestone_age_months: 24
+  universal: true
+
+- id: word_020
+  category: body
+  age_band: "3-4"
+  phoneme_targets_ipa: [m, aʊ, θ]
+  image: images/words/word_020_mouth.png
+  cdi_frequency_rank: 88
+  asha_milestone_age_months: 26
+  universal: true

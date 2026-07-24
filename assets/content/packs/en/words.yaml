@@ -1,0 +1,98 @@
+# ══════════════════════════════════════════════════════════════════
+# English pack — word translations
+# ══════════════════════════════════════════════════════════════════
+# For each word_id defined in ../../core/words.yaml, provide:
+#   - word    : the label shown/heard in this language
+#   - audio   : path to pre-generated MP3 (relative to this pack folder)
+#
+# Words absent from this file must be listed in ./cultural_overrides.yaml.
+# The content_verification test will fail the build otherwise.
+# ══════════════════════════════════════════════════════════════════
+
+# ─── animals ─────────────────────────────────────────────────────
+word_001:
+  word: cat
+  audio: audio/word_001.mp3
+
+word_002:
+  word: dog
+  audio: audio/word_002.mp3
+
+word_003:
+  word: cow
+  audio: audio/word_003.mp3
+
+word_004:
+  word: bird
+  audio: audio/word_004.mp3
+
+word_005:
+  word: elephant
+  audio: audio/word_005.mp3
+
+# ─── food ───────────────────────────────────────────────────────
+word_006:
+  word: milk
+  audio: audio/word_006.mp3
+
+word_007:
+  word: banana
+  audio: audio/word_007.mp3
+
+word_008:
+  word: water
+  audio: audio/word_008.mp3
+
+word_009:
+  # Retain "roti" as a loanword in the English pack — widely used in Indian
+  # English and increasingly in global English. Feels natural for bilingual
+  # families in the target audience.
+  word: roti
+  audio: audio/word_009.mp3
+
+word_010:
+  word: apple
+  audio: audio/word_010.mp3
+
+# ─── family ──────────────────────────────────────────────────────
+word_011:
+  word: mama
+  audio: audio/word_011.mp3
+
+word_012:
+  word: papa
+  audio: audio/word_012.mp3
+
+word_013:
+  # English pack: "grandma" — culturally appropriate label
+  word: grandma
+  audio: audio/word_013.mp3
+
+word_014:
+  word: grandpa
+  audio: audio/word_014.mp3
+
+word_015:
+  word: baby
+  audio: audio/word_015.mp3
+
+# ─── body ────────────────────────────────────────────────────────
+word_016:
+  word: eye
+  audio: audio/word_016.mp3
+
+word_017:
+  word: nose
+  audio: audio/word_017.mp3
+
+word_018:
+  word: hand
+  audio: audio/word_018.mp3
+
+word_019:
+  word: foot
+  audio: audio/word_019.mp3
+
+word_020:
+  word: mouth
+  audio: audio/word_020.mp3
