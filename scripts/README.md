@@ -35,16 +35,41 @@ Suitable for CI — add to GitHub Actions:
   run: python3 scripts/verify_content.py
 ```
 
-### `generate_tts.py` — Build-time audio generation *(coming soon)*
+### `generate_tts.py` — Build-time audio generation
 
 Reads `assets/content/packs/<locale>/words.yaml` and pre-generates MP3
-audio files using:
-- **English:** Piper TTS (open-source, MIT, runs locally)
-- **Hindi:** Azure Neural TTS (`hi-IN-SwaraNeural`, `cheerful` style)
+audio files. Idempotent — skips files whose content hash hasn't changed.
 
-Idempotent — skips files that haven't changed since last run.
+**Providers:**
+- **English (`en`):** Piper TTS (open-source, MIT, runs locally — free forever)
+- **Hindi (`hi`):** Azure Neural TTS (`hi-IN-SwaraNeural`, `cheerful` style — free tier)
 
-Requires API keys in `.env` (copy from `.env.example`).
+**First-time setup:**
+```bash
+# English: install Piper (no API key needed)
+pip3 install piper-tts --user --break-system-packages
+
+# Hindi: set Azure key in .env
+cp .env.example .env
+# edit .env and fill in AZURE_TTS_KEY and AZURE_TTS_REGION
+```
+
+**Run:**
+```bash
+# Preview without making any API calls
+python3 scripts/generate_tts.py --pack en --dry-run
+python3 scripts/generate_tts.py --pack hi --dry-run
+
+# Generate for real (runs idempotently — skips unchanged words)
+python3 scripts/generate_tts.py --pack en
+python3 scripts/generate_tts.py --pack hi
+
+# Regenerate all (ignore cache)
+python3 scripts/generate_tts.py --pack all --force
+```
+
+Hash cache lives in `.tts_cache/` (committed — keeps CI skipping
+already-generated audio). MP3 files tracked via Git LFS.
 
 ## `.venv` (optional)
 
