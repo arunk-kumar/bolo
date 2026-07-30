@@ -1,0 +1,36 @@
+name: Content Verification
+
+on:
+  push:
+    paths:
+      - "assets/content/**"
+      - "scripts/verify_content.py"
+      - ".github/workflows/verify.yml"
+  pull_request:
+    paths:
+      - "assets/content/**"
+      - "scripts/verify_content.py"
+
+jobs:
+  verify-content:
+    name: Verify content integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo (with LFS)
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Run content verification
+        run: python3 scripts/verify_content.py
