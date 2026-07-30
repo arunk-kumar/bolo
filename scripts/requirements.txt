@@ -1,0 +1,7 @@
+# Build-time scripts dependencies
+# Install with: pip3 install -r requirements.txt --user --break-system-packages
+# Or inside the .venv:  .venv/bin/pip install -r requirements.txt
+
+pyyaml>=6.0        # YAML parsing for verify_content.py and generate_tts.py
+python-dotenv>=1.0 # .env file loading for generate_tts.py API keys
+requests>=2.31     # HTTP calls for generate_tts.py (Azure TTS, ElevenLabs)
