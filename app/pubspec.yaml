@@ -55,27 +55,31 @@ flutter:
 
   assets:
     # Content packs (YAML — loaded at runtime)
-    - ../assets/content/core/words.yaml
-    - ../assets/content/core/milestones.yaml
-    - ../assets/content/packs/en/manifest.yaml
-    - ../assets/content/packs/en/words.yaml
-    - ../assets/content/packs/en/cultural_overrides.yaml
-    - ../assets/content/packs/hi/manifest.yaml
-    - ../assets/content/packs/hi/words.yaml
-    - ../assets/content/packs/hi/cultural_overrides.yaml
+    - assets/content/core/words.yaml
+    - assets/content/core/milestones.yaml
+    - assets/content/packs/en/manifest.yaml
+    - assets/content/packs/en/words.yaml
+    - assets/content/packs/en/cultural_overrides.yaml
+    - assets/content/packs/hi/manifest.yaml
+    - assets/content/packs/hi/words.yaml
+    - assets/content/packs/hi/cultural_overrides.yaml
 
-    # Audio (MP3s via Git LFS — added after TTS generation)
-    # - ../assets/audio/en/
-    # - ../assets/audio/hi/
-    # - ../assets/audio/sfx/
+    # SFX (WAV — tap, reward, session complete)
+    - assets/audio/sfx/tap.wav
+    - assets/audio/sfx/reward.wav
+    - assets/audio/sfx/session_complete.wav
+
+    # Word audio (MP3s — generated after TTS run)
+    # - assets/audio/en/
+    # - assets/audio/hi/
 
     # Images (word illustrations + scenes — added after art generation)
-    # - ../assets/images/words/
-    # - ../assets/images/scenes/
+    # - assets/images/words/
+    # - assets/images/scenes/
 
   fonts:
     - family: NotoSansDevanagari
       fonts:
-        - asset: ../assets/fonts/NotoSansDevanagari-Regular.ttf
-        - asset: ../assets/fonts/NotoSansDevanagari-Bold.ttf
+        - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
+        - asset: assets/fonts/NotoSansDevanagari-Bold.ttf
           weight: 700

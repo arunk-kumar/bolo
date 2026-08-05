@@ -1,11 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
+import 'data/repositories/content_repository.dart';
+import 'features/game_naming/naming_game_screen.dart';
+import 'shared/providers/content_provider.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Load content for English pack at startup
+  try {
+    await ContentRepository.initialize('en');
+  } catch (e) {
+    // ignore: avoid_print
+    print('ContentRepository init error: $e');
+  }
+
+  final prefs = await SharedPreferences.getInstance();
+
   runApp(
-    const ProviderScope(
-      child: BoloApp(),
+    ProviderScope(
+      overrides: [
+        sharedPrefsProvider.overrideWithValue(prefs),
+      ],
+      child: const BoloApp(),
     ),
   );
 }
@@ -26,7 +46,7 @@ class BoloApp extends StatelessWidget {
   ThemeData _buildTheme() {
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFFFF9800), // warm orange — toddler-friendly
+        seedColor: const Color(0xFFFF9800),
         brightness: Brightness.light,
       ),
       textTheme: GoogleFonts.nunitoTextTheme(),
@@ -36,33 +56,32 @@ class BoloApp extends StatelessWidget {
 }
 
 // ── Home Screen ───────────────────────────────────────────────────
-// Placeholder: will become the age-picker onboarding flow in the next
-// milestone. For now shows the Bolo brand screen with language toggle.
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  String _activeLang = 'en'; // 'en' | 'hi'
-
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
-    final isHindi = _activeLang == 'hi';
+    final locale = ref.watch(activeLocaleProvider);
+    final isHindi = locale == 'hi';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8E1), // warm cream
+      backgroundColor: const Color(0xFFFFF8E1),
       body: SafeArea(
         child: Center(
-          child: Padding(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // ── Character placeholder ──────────────────────
+                // ── Character ──────────────────────────────────
                 Container(
                   width: 180,
                   height: 180,
@@ -126,8 +145,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _langChip('en', 'English', isHindi),
-                      _langChip('hi', 'हिन्दी', !isHindi),
+                      _langChip(ref, 'en', 'English', !isHindi),
+                      _langChip(ref, 'hi', 'हिन्दी', isHindi),
                     ],
                   ),
                 ),
@@ -139,17 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   height: 72,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // TODO: navigate to age picker / game screen
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            isHindi ? 'जल्द आ रहा है! 🎉' : 'Coming soon! 🎉',
-                          ),
-                          backgroundColor: const Color(0xFFE65100),
-                        ),
-                      );
-                    },
+                    onPressed: () => _startGame(context, locale),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE65100),
                       foregroundColor: Colors.white,
@@ -170,19 +179,39 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _langChip(String lang, String label, bool isSelected) {
+  void _startGame(BuildContext context, String locale) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => NamingGameScreen(
+          ageBand: '2-3',
+          locale: locale,
+        ),
+      ),
+    );
+  }
+
+  Widget _langChip(
+      WidgetRef ref, String lang, String label, bool isSelected) {
     return GestureDetector(
-      onTap: () => setState(() => _activeLang = lang),
+      onTap: () {
+        ref.read(activeLocaleProvider.notifier).state = lang;
+        // Reload content for the new locale
+        ContentRepository.initialize(lang);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFFE65100) : Colors.transparent,
+          color: isSelected
+              ? const Color(0xFFE65100)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(50),
         ),
         child: Text(
