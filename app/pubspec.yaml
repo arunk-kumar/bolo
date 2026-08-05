@@ -1,0 +1,81 @@
+name: bolo
+description: "Bolo — Multilingual speech-play app for toddlers ages 2-5"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ── State management ──────────────────────────────────────────
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # ── Routing ───────────────────────────────────────────────────
+  go_router: ^15.1.2
+
+  # ── Local storage (on-device, no cloud) ───────────────────────
+  # Using shared_preferences for MVP (isar_generator incompatible with
+  # Dart 3.12 / riverpod_generator; swap back to isar once updated)
+  shared_preferences: ^2.3.3
+  path_provider: ^2.1.5
+
+  # ── Game engine ───────────────────────────────────────────────
+  flame: ^1.23.0
+
+  # ── Audio (pre-loaded, sub-50ms latency) ──────────────────────
+  flame_audio: ^2.10.5
+
+  # ── Animation ────────────────────────────────────────────────
+  lottie: ^3.1.3
+  flutter_animate: ^4.5.2
+
+  # ── Speech detection (on-device STT) ─────────────────────────
+  speech_to_text: ^7.0.0
+
+  # ── YAML content loading ──────────────────────────────────────
+  yaml: ^3.1.2
+
+  # ── Utilities ────────────────────────────────────────────────
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  riverpod_generator: ^2.6.1
+  build_runner: ^2.4.14
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    # Content packs (YAML — loaded at runtime)
+    - ../assets/content/core/words.yaml
+    - ../assets/content/core/milestones.yaml
+    - ../assets/content/packs/en/manifest.yaml
+    - ../assets/content/packs/en/words.yaml
+    - ../assets/content/packs/en/cultural_overrides.yaml
+    - ../assets/content/packs/hi/manifest.yaml
+    - ../assets/content/packs/hi/words.yaml
+    - ../assets/content/packs/hi/cultural_overrides.yaml
+
+    # Audio (MP3s via Git LFS — added after TTS generation)
+    # - ../assets/audio/en/
+    # - ../assets/audio/hi/
+    # - ../assets/audio/sfx/
+
+    # Images (word illustrations + scenes — added after art generation)
+    # - ../assets/images/words/
+    # - ../assets/images/scenes/
+
+  fonts:
+    - family: NotoSansDevanagari
+      fonts:
+        - asset: ../assets/fonts/NotoSansDevanagari-Regular.ttf
+        - asset: ../assets/fonts/NotoSansDevanagari-Bold.ttf
+          weight: 700
