@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/bolo_colors.dart';
+import '../../core/theme/bolo_dimens.dart';
+import '../../core/theme/bolo_typography.dart';
 import '../../data/models/word_entry.dart';
 import '../../data/repositories/content_repository.dart';
 import '../../shared/audio/audio_service.dart';
 
+/// The naming game — MVP's only game screen.
+///
+/// Layout matches Design System v0.2 §03 (Word Game phone frame):
+///   status bar → close + progress bar + ⭐ score → word card → English
+///   label → tap hint. Six words per round. Bilingual pairing is Phase 2.
 class NamingGameScreen extends ConsumerStatefulWidget {
   final String ageBand;
-  final String locale;
 
-  const NamingGameScreen({
-    super.key,
-    this.ageBand = '2-3',
-    this.locale = 'en',
-  });
+  const NamingGameScreen({super.key, this.ageBand = '2-3'});
 
   @override
   ConsumerState<NamingGameScreen> createState() => _NamingGameScreenState();
@@ -40,7 +44,7 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
     _currentIndex = 0;
     _score = 0;
     _sessionComplete = false;
-    // Speak first word after brief delay so UI is rendered
+    // Speak first word after the UI is rendered.
     Future.delayed(const Duration(milliseconds: 600), _speakCurrentWord);
   }
 
@@ -53,8 +57,8 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
 
   void _onTap() {
     if (_showReward || _sessionComplete) return;
-    // Fire-and-forget — audio initialises from within this gesture handler,
-    // satisfying the browser's "user gesture required" policy.
+    // Fire-and-forget — audio initialises from this gesture handler,
+    // satisfying the browser's user-gesture policy on Flutter web.
     AudioService.playTap();
     setState(() => _showReward = true);
 
@@ -69,7 +73,6 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
         _score++;
         if (_currentIndex < _roundWords.length - 1) {
           _currentIndex++;
-          // Speak next word after card transitions
           Future.delayed(const Duration(milliseconds: 400), _speakCurrentWord);
         } else {
           _sessionComplete = true;
@@ -82,12 +85,12 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8E1),
+      backgroundColor: BoloColors.paper,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.brown),
+          icon: const Icon(Icons.close, color: BoloColors.ink2),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: _ProgressBar(
@@ -98,12 +101,19 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Center(
-              child: Text(
-                '⭐ $_score',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.orange,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: const BoxDecoration(
+                  color: BoloColors.turmeric,
+                  borderRadius: BoloRadius.pillAll,
+                ),
+                child: Text(
+                  '⭐ $_score',
+                  style: BoloTypography.numericDisplay(
+                    size: 15,
+                    color: BoloColors.ink,
+                  ),
                 ),
               ),
             ),
@@ -112,7 +122,6 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Phone: fill width. Tablet/Desktop: cap at 480, center it.
           final isWide = constraints.maxWidth > 520;
           Widget content = _sessionComplete
               ? _SessionCompleteView(
@@ -122,13 +131,15 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
                 )
               : _GameView(
                   word: _current,
-                  locale: widget.locale,
                   showReward: _showReward,
                   onTap: _onTap,
                 );
           if (isWide) {
             content = Center(
-              child: SizedBox(width: 480, child: content),
+              child: SizedBox(
+                width: BoloLayout.contentMaxWidth,
+                child: content,
+              ),
             );
           }
           return content;
@@ -142,13 +153,11 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
 
 class _GameView extends StatelessWidget {
   final WordEntry word;
-  final String locale;
   final bool showReward;
   final VoidCallback onTap;
 
   const _GameView({
     required this.word,
-    required this.locale,
     required this.showReward,
     required this.onTap,
   });
@@ -168,29 +177,21 @@ class _GameView extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 150),
                 decoration: BoxDecoration(
-                  color: showReward
-                      ? const Color(0xFFFFE082)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(32),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.orange
-                          .withValues(alpha: showReward ? 0.5 : 0.15),
-                      blurRadius: showReward ? 32 : 16,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  color:
+                      showReward ? BoloColors.turmeric.withValues(alpha: 0.35) : Colors.white,
+                  borderRadius: BoloRadius.xlAll,
+                  boxShadow: showReward
+                      ? BoloShadow.lift
+                      : BoloShadow.wordCard,
+                  border: Border.all(
+                    color: BoloColors.turmeric.withValues(alpha: 0.35),
+                    width: 3,
+                  ),
                 ),
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Image placeholder (replaced with real art later)
-                    _WordImagePlaceholder(
-                      wordId: word.id,
-                      category: word.category,
-                    ),
-
-                    // Reward burst
+                    _WordImagePlaceholder(wordId: word.id),
                     if (showReward)
                       const _RewardBurst()
                           .animate()
@@ -216,20 +217,20 @@ class _GameView extends StatelessWidget {
 
         const SizedBox(height: 24),
 
-        // ── Bilingual word label ──────────────────────────────────
-        _BilingualLabel(word: word, locale: locale),
+        // ── Word label (English only at MVP) ─────────────────────
+        Text(
+          word.word,
+          style: BoloTypography.wordDisplay(color: BoloColors.saffron),
+        ),
 
         const SizedBox(height: 16),
 
         // ── Tap hint ─────────────────────────────────────────────
         if (!showReward)
           Text(
-            locale == 'hi' ? 'छूकर देखो! 👆' : 'Tap to say it! 👆',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.brown.shade400,
-              fontWeight: FontWeight.w600,
-            ),
+            'Tap to say it! 👆',
+            style: BoloTypography.body(color: BoloColors.ink3)
+                .copyWith(fontSize: 14, fontWeight: FontWeight.w700),
           )
               .animate(onPlay: (c) => c.repeat(reverse: true))
               .fadeIn(duration: 600.ms)
@@ -241,56 +242,14 @@ class _GameView extends StatelessWidget {
   }
 }
 
-// ── Bilingual label ───────────────────────────────────────────────
-
-class _BilingualLabel extends StatelessWidget {
-  final WordEntry word;
-  final String locale;
-
-  const _BilingualLabel({required this.word, required this.locale});
-
-  @override
-  Widget build(BuildContext context) {
-    final isHindi = locale == 'hi';
-
-    return Column(
-      children: [
-        Text(
-          word.word,
-          style: TextStyle(
-            fontSize: 42,
-            fontWeight: FontWeight.w900,
-            color: const Color(0xFFE65100),
-            fontFamily: isHindi ? 'NotoSansDevanagari' : null,
-          ),
-        ),
-        if (isHindi && word.transliteration != null)
-          Text(
-            word.transliteration!,
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.brown.shade400,
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 // ── Word image placeholder ────────────────────────────────────────
 
 class _WordImagePlaceholder extends StatelessWidget {
   final String wordId;
-  final String category;
 
-  const _WordImagePlaceholder({
-    required this.wordId,
-    required this.category,
-  });
+  const _WordImagePlaceholder({required this.wordId});
 
-  // Per-word placeholder emojis — replaced with real art later
+  // Per-word placeholder emojis — replaced with real art / .glb later.
   static const _wordEmojis = {
     'word_001': '🐱', // cat
     'word_002': '🐶', // dog
@@ -304,8 +263,8 @@ class _WordImagePlaceholder extends StatelessWidget {
     'word_010': '🍎', // apple
     'word_011': '👩', // mama
     'word_012': '👨', // papa
-    'word_013': '👵', // grandma/nani
-    'word_014': '👴', // grandpa/nana
+    'word_013': '👵', // grandma
+    'word_014': '👴', // grandpa
     'word_015': '👶', // baby
     'word_016': '👁️', // eye
     'word_017': '👃', // nose
@@ -346,16 +305,20 @@ class _ProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: List.generate(total, (i) {
+        final Color color;
+        if (i < current) {
+          color = BoloColors.saffron;
+        } else if (i == current) {
+          color = BoloColors.turmeric;
+        } else {
+          color = BoloColors.paper3;
+        }
         return Expanded(
           child: Container(
             height: 8,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: i < current
-                  ? const Color(0xFFE65100)
-                  : i == current
-                      ? const Color(0xFFFFB74D)
-                      : Colors.brown.shade100,
+              color: color,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -380,65 +343,65 @@ class _SessionCompleteView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('🎉', style: TextStyle(fontSize: 80))
-                .animate()
-                .scale(
-                  begin: const Offset(0, 0),
-                  end: const Offset(1, 1),
-                  duration: 500.ms,
-                  curve: Curves.elasticOut,
-                ),
-
-            const SizedBox(height: 24),
-
-            Text(
-              'Amazing!',
-              style: TextStyle(
-                fontSize: 42,
-                fontWeight: FontWeight.w900,
-                color: const Color(0xFFE65100),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [BoloColors.turmeric, BoloColors.saffron],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('🎉', style: TextStyle(fontSize: 80))
+                  .animate()
+                  .scale(
+                    begin: const Offset(0, 0),
+                    end: const Offset(1, 1),
+                    duration: 500.ms,
+                    curve: Curves.elasticOut,
+                  ),
+              const SizedBox(height: 24),
+              Text(
+                'Amazing!',
+                style: BoloTypography.hero(color: Colors.white),
               ),
-            ),
-
-            const SizedBox(height: 8),
-
-            Text(
-              '$score / $total words',
-              style: TextStyle(
-                fontSize: 20,
-                color: Colors.brown.shade500,
-                fontWeight: FontWeight.w600,
+              const SizedBox(height: 8),
+              Text(
+                '$score / $total words',
+                style: BoloTypography.body(color: Colors.white)
+                    .copyWith(fontWeight: FontWeight.w700),
               ),
-            ),
-
-            const SizedBox(height: 48),
-
-            SizedBox(
-              width: double.infinity,
-              height: 64,
-              child: ElevatedButton(
-                onPressed: onPlayAgain,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE65100),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(32),
+              const SizedBox(height: 48),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: onPlayAgain,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: BoloColors.saffron,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BoloRadius.pillAll,
+                    ),
+                    elevation: 8,
+                    shadowColor: Colors.black26,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      'Play again! 🔄',
+                      style: BoloTypography.subhead(color: BoloColors.saffron)
+                          .copyWith(fontSize: 22),
+                    ),
                   ),
                 ),
-                child: const Text(
-                  'Play again! 🔄',
-                  style: TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.w800),
-                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
