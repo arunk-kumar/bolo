@@ -36,8 +36,8 @@ WORDS_CORE  = CORE_DIR / "words.yaml"
 
 # ── Known valid values ────────────────────────────────────────────
 VALID_AGE_BANDS  = {"2-3", "3-4", "4-5"}
-VALID_CATEGORIES = {"animals", "food", "family", "body", "transport",
-                    "clothes", "home_objects", "nature", "actions", "descriptors"}
+VALID_CATEGORIES = {"animals", "food", "family", "body", "colours",
+                    "objects", "vehicles", "nature"}
 DEVANAGARI_RANGE = range(0x0900, 0x0980)  # Unicode block for Devanagari
 
 # ── Colour helpers (ANSI — no extra library) ──────────────────────

@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/bolo_colors.dart';
 import '../../core/theme/bolo_dimens.dart';
 import '../../core/theme/bolo_typography.dart';
+import '../../data/generated/word_emoji.g.dart';
 import '../../data/models/word_entry.dart';
 import '../../data/repositories/content_repository.dart';
 import '../../shared/audio/audio_service.dart';
+import '../../shared/providers/content_provider.dart';
 
 /// The naming game — MVP's only game screen.
 ///
@@ -15,9 +17,15 @@ import '../../shared/audio/audio_service.dart';
 ///   status bar → close + progress bar + ⭐ score → word card → English
 ///   label → tap hint. Six words per round. Bilingual pairing is Phase 2.
 class NamingGameScreen extends ConsumerStatefulWidget {
-  final String ageBand;
+  /// Optional category filter (e.g. `animals`, `food`). When null the round
+  /// draws from every category — used for the "mixed" fallback.
+  final String? category;
 
-  const NamingGameScreen({super.key, this.ageBand = '2-3'});
+  /// Optional label shown in the app bar (the stage name). Defaults to
+  /// `"Play"` when no category is given.
+  final String? title;
+
+  const NamingGameScreen({super.key, this.category, this.title});
 
   @override
   ConsumerState<NamingGameScreen> createState() => _NamingGameScreenState();
@@ -37,8 +45,12 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
   }
 
   void _loadRound() {
+    // Age band comes from the Riverpod state — the parent-picker (Phase 2
+    // onboarding) writes there; MVP defaults to 2-3.
+    final ageBand = ref.read(ageBandProvider);
     _roundWords = ContentRepository.instance.roundWords(
-      ageBand: widget.ageBand,
+      ageBand: ageBand,
+      category: widget.category,
       count: 6,
     );
     _currentIndex = 0;
@@ -49,7 +61,7 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
   }
 
   void _speakCurrentWord() {
-    if (!mounted || _sessionComplete) return;
+    if (!mounted || _sessionComplete || _roundWords.isEmpty) return;
     AudioService.playWord(_current.audioAsset);
   }
 
@@ -123,17 +135,22 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 520;
-          Widget content = _sessionComplete
-              ? _SessionCompleteView(
-                  score: _score,
-                  total: _roundWords.length,
-                  onPlayAgain: () => setState(_loadRound),
-                )
-              : _GameView(
-                  word: _current,
-                  showReward: _showReward,
-                  onTap: _onTap,
-                );
+          Widget content;
+          if (_roundWords.isEmpty) {
+            content = _EmptyPoolView(category: widget.category);
+          } else if (_sessionComplete) {
+            content = _SessionCompleteView(
+              score: _score,
+              total: _roundWords.length,
+              onPlayAgain: () => setState(_loadRound),
+            );
+          } else {
+            content = _GameView(
+              word: _current,
+              showReward: _showReward,
+              onTap: _onTap,
+            );
+          }
           if (isWide) {
             content = Center(
               child: SizedBox(
@@ -249,35 +266,54 @@ class _WordImagePlaceholder extends StatelessWidget {
 
   const _WordImagePlaceholder({required this.wordId});
 
-  // Per-word placeholder emojis — replaced with real art / .glb later.
-  static const _wordEmojis = {
-    'word_001': '🐱', // cat
-    'word_002': '🐶', // dog
-    'word_003': '🐄', // cow
-    'word_004': '🐦', // bird
-    'word_005': '🐘', // elephant
-    'word_006': '🥛', // milk
-    'word_007': '🍌', // banana
-    'word_008': '💧', // water
-    'word_009': '🫓', // roti
-    'word_010': '🍎', // apple
-    'word_011': '👩', // mama
-    'word_012': '👨', // papa
-    'word_013': '👵', // grandma
-    'word_014': '👴', // grandpa
-    'word_015': '👶', // baby
-    'word_016': '👁️', // eye
-    'word_017': '👃', // nose
-    'word_018': '🖐️', // hand
-    'word_019': '🦶', // foot
-    'word_020': '👄', // mouth
-  };
+  @override
+  Widget build(BuildContext context) {
+    // Falls back to the generated map. This is a *placeholder* — the real
+    // deliverable is a Rive 2D animation per word (elephant trunk swing,
+    // lion mouth-open + roar, etc). Track in ART todo.
+    final emoji = wordEmoji[wordId] ?? '🎯';
+    return Center(
+      child: Text(emoji, style: const TextStyle(fontSize: 120)),
+    );
+  }
+}
+
+// ── Empty pool view (safety net) ──────────────────────────────────
+//
+// Rendered when the age × category pool is empty. Shouldn't happen in
+// production — the repository widens the pool before we hit this — but it
+// keeps the app from crashing while content grows.
+
+class _EmptyPoolView extends StatelessWidget {
+  final String? category;
+  const _EmptyPoolView({required this.category});
 
   @override
   Widget build(BuildContext context) {
-    final emoji = _wordEmojis[wordId] ?? '🎯';
     return Center(
-      child: Text(emoji, style: const TextStyle(fontSize: 120)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('🐣', style: TextStyle(fontSize: 72)),
+            const SizedBox(height: 24),
+            Text(
+              'More words coming soon',
+              style: BoloTypography.subhead(color: BoloColors.ink),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              category == null
+                  ? "We're still growing this pack."
+                  : "The $category words for this age are still hatching.",
+              style: BoloTypography.body(color: BoloColors.ink3),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

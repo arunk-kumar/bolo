@@ -95,11 +95,32 @@ class ContentRepository {
 
   LanguagePack? packFor(String locale) => _packs[locale];
 
+  /// Words for one round, filtered by age band and (optionally) category.
+  ///
+  /// Falls back gracefully: if the age+category pool is empty (e.g. the child
+  /// is 4-5 and the category has no 4-5 words yet), we widen to just the
+  /// category. If that's also empty we widen to the whole age band. The
+  /// returned list is trimmed to whatever the pool can supply — never more.
   List<WordEntry> roundWords({
     required String ageBand,
+    String? category,
     int count = 6,
   }) {
-    final pool = wordsForAgeBand(ageBand)..shuffle();
+    List<WordEntry> pool;
+    if (category != null) {
+      pool = _words
+          .where((w) => w.ageBand == ageBand && w.category == category)
+          .toList();
+      if (pool.isEmpty) {
+        pool = _words.where((w) => w.category == category).toList();
+      }
+      if (pool.isEmpty) {
+        pool = wordsForAgeBand(ageBand);
+      }
+    } else {
+      pool = wordsForAgeBand(ageBand);
+    }
+    pool.shuffle();
     return pool.take(count).toList();
   }
 }

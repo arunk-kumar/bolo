@@ -10,6 +10,15 @@ import '../../data/repositories/content_repository.dart';
 // reload, but the UI still reads from a single `activePack` source.
 final activePackProvider = StateProvider<String>((ref) => 'en');
 
+// ── Age band ─────────────────────────────────────────────────────
+//
+// The developmental age band the child plays at: "2-3", "3-4", or "4-5".
+// MVP defaults to "2-3" (our densest content bucket); the onboarding
+// age-picker will write to this provider in a follow-up commit, and the
+// value will persist to SharedPreferences at that point. Every game reads
+// from here so a single flip re-shapes the whole word pool.
+final ageBandProvider = StateProvider<String>((ref) => '2-3');
+
 // All words for the active pack.
 final allWordsProvider = Provider<List<WordEntry>>((ref) {
   ref.watch(activePackProvider); // rebuild when pack changes
