@@ -72,7 +72,8 @@ class ContentRepository {
         universal: core['universal'] as bool,
         word: pw['word'] as String,
         transliteration: pw['transliteration'] as String?,
-        audioAsset: 'assets/content/packs/$locale/${pw['audio']}',
+        // Piper generates .wav; replace .mp3 extension if present
+        audioAsset: 'assets/content/packs/$locale/${(pw['audio'] as String).replaceAll('.mp3', '.wav')}',
       ));
     }
 

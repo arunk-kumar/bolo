@@ -151,44 +151,46 @@ def generate_azure(text: str, voice_id: str, voice_style: str,
 
 def generate_piper(text: str, voice_id: str, out_path: Path, dry_run: bool) -> bool:
     """
-    Run Piper TTS locally via subprocess.
+    Generate audio using Piper TTS Python API.
     Install: pip3 install piper-tts --user --break-system-packages
-    Voice downloads automatically on first use (~50 MB).
-
+    Voice model downloads automatically on first use (~50 MB).
     No API key needed. Free forever.
     """
-    import subprocess
-
     if dry_run:
         print(yellow(f"  [dry-run] would call Piper TTS: voice={voice_id} text='{text}'"))
         return True
 
-    # Check piper is available
     try:
-        subprocess.run(["python3", "-m", "piper", "--help"],
-                       capture_output=True, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError):
+        from piper import PiperVoice  # type: ignore[import-untyped]
+        import wave as wave_module
+    except ImportError:
         print(red("  Piper TTS not installed. Run:"))
         print(red("  pip3 install piper-tts --user --break-system-packages"))
         return False
 
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        "python3", "-m", "piper",
-        "--model", voice_id,          # e.g. en_US-amy-medium
-        "--output_file", str(out_path),
-    ]
     try:
-        result = subprocess.run(
-            cmd,
-            input=text.encode(),
-            capture_output=True,
-            timeout=30
-        )
-        if result.returncode != 0:
-            print(red(f"  Piper error: {result.stderr.decode()[:200]}"))
-            return False
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        # Resolve model path — check local piper_models/ dir first
+        model_dir = Path(__file__).parent / 'piper_models'
+        model_file = model_dir / f'{voice_id}.onnx'
+        if not model_file.exists():
+            # Fall back to bare voice_id (may work if already on PATH)
+            model_path = voice_id
+        else:
+            model_path = str(model_file)
+        voice = PiperVoice.load(model_path, use_cuda=False)
+        wav_path = out_path.with_suffix('.wav')
+        with wave_module.open(str(wav_path), 'wb') as wav_file:
+            # set_wav_format=True lets Piper configure channels/rate/width
+            voice.synthesize_wav(text, wav_file, set_wav_format=True)
+        # Rename to final .wav path (pack yaml says .mp3 but we store .wav)
+        final_path = out_path.with_suffix('.wav')
+        if wav_path != final_path:
+            wav_path.rename(final_path)
         return True
+    except Exception as e:
+        print(red(f"  Piper error: {e}"))
+        return False
     except Exception as e:
         print(red(f"  Piper subprocess error: {e}"))
         return False

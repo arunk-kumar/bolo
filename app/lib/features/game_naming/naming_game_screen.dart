@@ -40,6 +40,13 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
     _currentIndex = 0;
     _score = 0;
     _sessionComplete = false;
+    // Speak first word after brief delay so UI is rendered
+    Future.delayed(const Duration(milliseconds: 600), _speakCurrentWord);
+  }
+
+  void _speakCurrentWord() {
+    if (!mounted || _sessionComplete) return;
+    AudioService.playWord(_current.audioAsset);
   }
 
   WordEntry get _current => _roundWords[_currentIndex];
@@ -62,6 +69,8 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
         _score++;
         if (_currentIndex < _roundWords.length - 1) {
           _currentIndex++;
+          // Speak next word after card transitions
+          Future.delayed(const Duration(milliseconds: 400), _speakCurrentWord);
         } else {
           _sessionComplete = true;
           AudioService.playSessionComplete();
