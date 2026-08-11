@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/bolo_colors.dart';
 import '../../core/theme/bolo_dimens.dart';
@@ -120,7 +119,8 @@ class _ParentGateDialogState extends State<_ParentGateDialog> {
           children: [
             Text(
               'For grown-ups',
-              style: GoogleFonts.merriweather(
+              style: TextStyle(
+                fontFamily: 'Merriweather',
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: BoloColors.ink3,
@@ -129,7 +129,8 @@ class _ParentGateDialogState extends State<_ParentGateDialog> {
             const SizedBox(height: 12),
             Text(
               'What is $_a + $_b + $_c ?',
-              style: GoogleFonts.merriweather(
+              style: TextStyle(
+                fontFamily: 'Merriweather',
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: BoloColors.ink,
@@ -148,7 +149,8 @@ class _ParentGateDialogState extends State<_ParentGateDialog> {
                 textAlign: TextAlign.center,
                 autofocus: true,
                 onSubmitted: (_) => _check(),
-                style: GoogleFonts.merriweather(
+                style: const TextStyle(
+                  fontFamily: 'Merriweather',
                   fontSize: 24,
                   fontWeight: FontWeight.w700,
                 ),

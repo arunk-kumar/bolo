@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'bolo_colors.dart';
 import 'bolo_dimens.dart';
 
@@ -25,10 +24,12 @@ class BoloTheme {
         surfaceContainerHighest: BoloColors.paper2,
         error:         BoloColors.alert,
       ),
-      textTheme: GoogleFonts.nunitoTextTheme(base.textTheme).apply(
-        bodyColor: BoloColors.ink2,
-        displayColor: BoloColors.ink,
-      ),
+      textTheme: base.textTheme
+          .apply(
+            fontFamily: 'Nunito',
+            bodyColor: BoloColors.ink2,
+            displayColor: BoloColors.ink,
+          ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -40,7 +41,8 @@ class BoloTheme {
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(BoloLayout.minTap),
           shape: const RoundedRectangleBorder(borderRadius: BoloRadius.pillAll),
-          textStyle: GoogleFonts.nunito(
+          textStyle: const TextStyle(
+            fontFamily: 'Nunito',
             fontSize: 20,
             fontWeight: FontWeight.w900,
           ),

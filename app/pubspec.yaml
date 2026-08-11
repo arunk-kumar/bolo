@@ -42,7 +42,6 @@ dependencies:
 
   # ── Utilities ────────────────────────────────────────────────
   cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -112,3 +111,12 @@ flutter:
         - asset: assets/fonts/NotoSansDevanagari-Regular.ttf
         - asset: assets/fonts/NotoSansDevanagari-Bold.ttf
           weight: 700
+    # Bundled locally so the app never contacts fonts.gstatic.com at runtime.
+    # Nunito ships as a variable font (wght 200–1000); Flutter selects the
+    # nearest weight via fontWeight in TextStyle. See lib/core/theme/.
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Variable.ttf
+    - family: Merriweather
+      fonts:
+        - asset: assets/fonts/Merriweather-Variable.ttf

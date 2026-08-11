@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'bolo_colors.dart';
 
 /// Bolo type scale — Nunito everywhere; weight and size do the hierarchy.
 /// Sizes match Design System v0.2 (see design/bolo-uiux-spec.html §02).
 ///
-/// Fetched via google_fonts at runtime for now; will be swapped to a
-/// bundled font file in a follow-up commit so offline first-launch works.
+/// Fonts are bundled locally (see pubspec.yaml → flutter.fonts). No
+/// runtime network call is made to fetch typography.
 class BoloTypography {
   BoloTypography._();
 
+  static const String _family = 'Nunito';
+
   /// Word display — the biggest thing the child sees.
   /// Nunito 900 · 56 / 56 · letter-spacing -1%.
-  static TextStyle wordDisplay({Color color = BoloColors.saffron}) =>
-      GoogleFonts.nunito(
+  static TextStyle wordDisplay({Color color = BoloColors.saffron}) => TextStyle(
+        fontFamily: _family,
         fontSize: 56,
         height: 1.0,
         fontWeight: FontWeight.w900,
@@ -22,7 +23,8 @@ class BoloTypography {
       );
 
   /// Hero / session-complete title. Nunito 900 · 42 / 44.
-  static TextStyle hero({Color color = BoloColors.ink}) => GoogleFonts.nunito(
+  static TextStyle hero({Color color = BoloColors.ink}) => TextStyle(
+        fontFamily: _family,
         fontSize: 42,
         height: 44 / 42,
         fontWeight: FontWeight.w900,
@@ -31,8 +33,8 @@ class BoloTypography {
       );
 
   /// Screen title — stage names, game headers. Nunito 900 · 28 / 32.
-  static TextStyle screenTitle({Color color = BoloColors.ink}) =>
-      GoogleFonts.nunito(
+  static TextStyle screenTitle({Color color = BoloColors.ink}) => TextStyle(
+        fontFamily: _family,
         fontSize: 28,
         height: 32 / 28,
         fontWeight: FontWeight.w900,
@@ -41,8 +43,8 @@ class BoloTypography {
       );
 
   /// Buttons, coaching prompts. Nunito 800 · 20 / 26.
-  static TextStyle subhead({Color color = BoloColors.ink}) =>
-      GoogleFonts.nunito(
+  static TextStyle subhead({Color color = BoloColors.ink}) => TextStyle(
+        fontFamily: _family,
         fontSize: 20,
         height: 26 / 20,
         fontWeight: FontWeight.w800,
@@ -50,7 +52,8 @@ class BoloTypography {
       );
 
   /// Parent-facing body copy. Nunito 600 · 16 / 24.
-  static TextStyle body({Color color = BoloColors.ink2}) => GoogleFonts.nunito(
+  static TextStyle body({Color color = BoloColors.ink2}) => TextStyle(
+        fontFamily: _family,
         fontSize: 16,
         height: 24 / 16,
         fontWeight: FontWeight.w600,
@@ -58,8 +61,8 @@ class BoloTypography {
       );
 
   /// Utility label — meta rows, status pills. Nunito 800 · 12 / 16 · +12% tracking · UPPERCASE.
-  static TextStyle utilityLabel({Color color = BoloColors.ink3}) =>
-      GoogleFonts.nunito(
+  static TextStyle utilityLabel({Color color = BoloColors.ink3}) => TextStyle(
+        fontFamily: _family,
         fontSize: 12,
         height: 16 / 12,
         fontWeight: FontWeight.w800,
@@ -72,7 +75,8 @@ class BoloTypography {
     required double size,
     Color color = BoloColors.saffron,
   }) =>
-      GoogleFonts.nunito(
+      TextStyle(
+        fontFamily: _family,
         fontSize: size,
         height: 1.0,
         fontWeight: FontWeight.w900,
