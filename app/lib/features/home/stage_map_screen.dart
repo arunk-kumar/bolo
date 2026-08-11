@@ -5,6 +5,8 @@ import '../../core/theme/bolo_colors.dart';
 import '../../core/theme/bolo_dimens.dart';
 import '../../core/theme/bolo_typography.dart';
 import '../game_naming/naming_game_screen.dart';
+import '../parent/parent_gate.dart';
+import '../parent/progress_screen.dart';
 
 /// Bolo's home surface — a vertical stage-map that renders the child's
 /// journey through the vocabulary. Mirrors Design System v0.2 §03 · screen 2.
@@ -406,11 +408,11 @@ class _StageIcon extends StatelessWidget {
 
 // ── Bottom nav ────────────────────────────────────────────────────
 
-class _BottomNav extends StatelessWidget {
+class _BottomNav extends ConsumerWidget {
   const _BottomNav();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.only(top: 10, bottom: 4),
       decoration: const BoxDecoration(
@@ -435,10 +437,18 @@ class _BottomNav extends StatelessWidget {
             icon: '🔒',
             label: 'Parent',
             active: false,
-            onTap: () => _showComingSoon(context, 'Parent Zone'),
+            onTap: () => _openParent(context, ref),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openParent(BuildContext context, WidgetRef ref) async {
+    final ok = await ParentGate.ensure(ref, context);
+    if (!context.mounted || !ok) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ProgressScreen()),
     );
   }
 

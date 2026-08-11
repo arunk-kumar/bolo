@@ -10,6 +10,7 @@ import '../../data/models/word_entry.dart';
 import '../../data/repositories/content_repository.dart';
 import '../../shared/audio/audio_service.dart';
 import '../../shared/providers/content_provider.dart';
+import '../parent/progress_service.dart';
 
 /// The naming game — MVP's only game screen.
 ///
@@ -89,9 +90,19 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
         } else {
           _sessionComplete = true;
           AudioService.playSessionComplete();
+          _recordProgress();
         }
       });
     });
+  }
+
+  Future<void> _recordProgress() async {
+    // Fire-and-forget — a failed write is not worth blocking the celebration.
+    await ref.read(progressServiceProvider).recordRoundComplete(
+          wordsSpoken: _score,
+          category: widget.category,
+        );
+    if (mounted) ref.read(progressBumpProvider.notifier).state++;
   }
 
   @override
