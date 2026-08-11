@@ -7,6 +7,7 @@ import '../../core/theme/bolo_typography.dart';
 import '../game_naming/naming_game_screen.dart';
 import '../parent/parent_gate.dart';
 import '../parent/progress_screen.dart';
+import '../parent/progress_service.dart';
 
 /// Bolo's home surface — a vertical stage-map that renders the child's
 /// journey through the vocabulary. Mirrors Design System v0.2 §03 · screen 2.
@@ -40,17 +41,14 @@ class _StageMapScreenState extends ConsumerState<StageMapScreen> {
     _StageDef(id: 'nature',   name: 'Outside',  emoji: '🌳', category: 'nature',   total: 10, lockedReason: 'STAGE 8 · LOCKED'),
   ];
 
-  // Fake progress until ProgressRepository ships. Two stages complete,
-  // "Family" in progress, the rest locked.
-  static const _progress = <String, int>{
-    'animals': 10,
-    'food': 10,
-    'family': 4,
-  };
-
   @override
   Widget build(BuildContext context) {
-    final stageStates = _computeStageStates();
+    // Real progress from SharedPreferences via ProgressService.
+    // Each round in the naming game bumps progressBumpProvider, which
+    // invalidates progressSummaryProvider and rebuilds this widget.
+    final summary = ref.watch(progressSummaryProvider);
+    final progress = summary.byCategory;
+    final stageStates = _computeStageStates(progress);
 
     return Scaffold(
       body: SafeArea(
@@ -72,10 +70,14 @@ class _StageMapScreenState extends ConsumerState<StageMapScreen> {
                       itemBuilder: (context, i) {
                         final def = _stages[i];
                         final state = stageStates[i];
+                        // Category counters can exceed `total` if the child
+                        // keeps playing after mastering; clamp for display.
+                        final rawDone = progress[def.category] ?? 0;
+                        final done = rawDone > def.total ? def.total : rawDone;
                         return _StageRow(
                           def: def,
                           state: state,
-                          done: _progress[def.id] ?? 0,
+                          done: done,
                           onTap: state == _StageState.locked
                               ? null
                               : () => _openStage(context, def),
@@ -96,11 +98,11 @@ class _StageMapScreenState extends ConsumerState<StageMapScreen> {
   // First unmastered stage → current; anything after → locked; everything
   // before → done. A stage with an explicit lockedReason stays locked even
   // when technically reachable — for the "unlocks tomorrow" cooldown case.
-  List<_StageState> _computeStageStates() {
+  List<_StageState> _computeStageStates(Map<String, int> progress) {
     final out = <_StageState>[];
     var currentAssigned = false;
     for (final def in _stages) {
-      final done = _progress[def.id] ?? 0;
+      final done = progress[def.category] ?? 0;
       if (def.lockedReason != null) {
         out.add(_StageState.locked);
         continue;
