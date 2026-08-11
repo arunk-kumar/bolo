@@ -71,7 +71,10 @@ scripts/.venv/
 scripts/venv/
 scripts/.pytest_cache/
 scripts/.tts_cache_debug/    # local debug output; the real .tts_cache/ folder IS committed
-scripts/piper_models/        # downloaded Piper voice models (~50 MB each, not in repo)
+# Downloaded Piper voice models (~50 MB each, not in repo) — keep README so
+# a fresh clone knows how to fetch them.
+scripts/piper_models/*
+!scripts/piper_models/README.md
 
 # ── Node (in case we add a landing page later) ────────────────────
 node_modules/
