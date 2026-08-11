@@ -51,10 +51,39 @@ dev_dependencies:
   riverpod_generator: ^2.6.1
   build_runner: ^2.4.14
 
+  # ── Store-ready icons + splash (build-time only) ─────────────
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.6
+
+# ── Launcher icon configuration ─────────────────────────────────
+# Run: `dart run flutter_launcher_icons` after regenerating icon.png
+flutter_launcher_icons:
+  android: true
+  ios: false  # iOS scaffold not present — MVP ships Android-only.
+  image_path: "assets/branding/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#F55D00"
+  adaptive_icon_foreground: "assets/branding/icon.png"
+
+# ── Native splash configuration ─────────────────────────────────
+# Run: `dart run flutter_native_splash:create` after regenerating splash.png
+flutter_native_splash:
+  color: "#FFF4E6"
+  image: "assets/branding/splash.png"
+  android_12:
+    icon_background_color: "#FFF4E6"
+    image: "assets/branding/icon.png"
+  android: true
+  ios: false
+
 flutter:
   uses-material-design: true
 
   assets:
+    # Branding
+    - assets/branding/icon.png
+    - assets/branding/splash.png
+
     # Content packs (YAML — loaded at runtime)
     - assets/content/core/words.yaml
     - assets/content/core/milestones.yaml

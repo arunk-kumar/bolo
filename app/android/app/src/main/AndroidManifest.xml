@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ── Permissions ─────────────────────────────────────────
+         RECORD_AUDIO is the only sensitive permission Bolo declares.
+         It is used ONLY for on-device "did the child vocalize?"
+         detection by speech_to_text. No audio is stored or
+         transmitted anywhere. See privacy policy for details. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <application
-        android:label="bolo"
+        android:label="Bolo"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
