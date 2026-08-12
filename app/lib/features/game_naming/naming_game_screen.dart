@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,24 +8,29 @@ import '../../core/theme/bolo_colors.dart';
 import '../../core/theme/bolo_dimens.dart';
 import '../../core/theme/bolo_typography.dart';
 import '../../data/generated/word_emoji.g.dart';
-import '../../data/models/word_entry.dart';
 import '../../data/repositories/content_repository.dart';
 import '../../shared/audio/audio_service.dart';
+import '../../shared/audio/speech_recognition_service.dart';
 import '../../shared/providers/content_provider.dart';
 import '../parent/progress_service.dart';
+import 'naming_state_machine.dart';
 
-/// The naming game — MVP's only game screen.
+/// Version C — speech-first naming game.
 ///
-/// Layout matches Design System v0.2 §03 (Word Game phone frame):
-///   status bar → close + progress bar + ⭐ score → word card → English
-///   label → tap hint. Six words per round. Bilingual pairing is Phase 2.
+/// The screen is glue between three things:
+///   1. [NamingStateMachine]        — pure logic per docs/design/version-c-plan.md
+///   2. [SpeechRecognitionService]  — mic + on-device STT
+///   3. [AudioService]              — pre-recorded feedback playback
+///
+/// Every widget-facing state (card tappable? glow on? star-burst?) is
+/// derived from `_fsm.phase`; every side effect is dispatched by
+/// [_runEffect]. See §3 of the plan for the FSM diagram.
 class NamingGameScreen extends ConsumerStatefulWidget {
-  /// Optional category filter (e.g. `animals`, `food`). When null the round
-  /// draws from every category — used for the "mixed" fallback.
+  /// Optional category filter (e.g. `animals`, `food`). When null, the
+  /// round draws from every category.
   final String? category;
 
-  /// Optional label shown in the app bar (the stage name). Defaults to
-  /// `"Play"` when no category is given.
+  /// Optional label shown in the app bar (the stage name).
   final String? title;
 
   const NamingGameScreen({super.key, this.category, this.title});
@@ -33,77 +40,274 @@ class NamingGameScreen extends ConsumerStatefulWidget {
 }
 
 class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
-  late List<WordEntry> _roundWords;
-  int _currentIndex = 0;
-  int _score = 0;
-  bool _showReward = false;
-  bool _sessionComplete = false;
+  final NamingStateMachine _fsm = NamingStateMachine();
+  final SpeechRecognitionService _stt = SpeechRecognitionService();
+
+  StreamSubscription<SpeechEvent>? _speechSub;
+  Timer? _phaseTimer;
+
+  /// Latest amplitude 0..1 for the card-border glow visualization
+  /// (Design C — "mic amplitude visualization: yes").
+  double _micLevel = 0.0;
+
+  /// Set true briefly whenever Path Y fires so the score pill's
+  /// star-burst overlay is triggered (Q6a).
+  bool _showStarBurst = false;
+
+  /// Tracks amplitude for the amplitude+duration filter used during
+  /// early-listen (Design C — C1c).
+  DateTime? _amplitudeAboveThresholdSince;
+
+  static const double _amplitudeThreshold = 0.35; // ~C1c "-30dB" region
+  static const Duration _sustainedDurationRequired =
+      Duration(milliseconds: 300);
 
   @override
   void initState() {
     super.initState();
-    _loadRound();
+    _bootstrap();
   }
 
-  void _loadRound() {
-    // Age band comes from the Riverpod state — the parent-picker (Phase 2
-    // onboarding) writes there; MVP defaults to 2-3.
+  @override
+  void dispose() {
+    _speechSub?.cancel();
+    _phaseTimer?.cancel();
+    _stt.stop();
+    super.dispose();
+  }
+
+  // ── Bootstrap ─────────────────────────────────────────────────────
+
+  Future<void> _bootstrap() async {
+    // Initialize STT eagerly. If unavailable, we run in vocalization-only
+    // mode (Rule 4 fallback) — the mic still opens; only Path Y is
+    // unreachable. UI does not surface the difference per Q1a.
+    await _stt.initialize();
+
     final ageBand = ref.read(ageBandProvider);
-    _roundWords = ContentRepository.instance.roundWords(
+    final words = ContentRepository.instance.roundWords(
       ageBand: ageBand,
       category: widget.category,
       count: 6,
     );
-    _currentIndex = 0;
-    _score = 0;
-    _sessionComplete = false;
-    // Speak first word after the UI is rendered.
-    Future.delayed(const Duration(milliseconds: 600), _speakCurrentWord);
+    if (!mounted) return;
+    if (words.isEmpty) {
+      setState(() {}); // triggers the empty-pool view
+      return;
+    }
+    final refs = words
+        .map((w) => WordRef(id: w.id, word: w.word, audioAsset: w.audioAsset))
+        .toList();
+    _pump(StartRound(refs));
   }
 
-  void _speakCurrentWord() {
-    if (!mounted || _sessionComplete || _roundWords.isEmpty) return;
-    AudioService.playWord(_current.audioAsset);
-  }
+  // ── FSM pump + effect dispatch ────────────────────────────────────
 
-  WordEntry get _current => _roundWords[_currentIndex];
-
-  void _onTap() {
-    if (_showReward || _sessionComplete) return;
-    // Tap itself is silent — the tap is the child's action, not something
-    // that needs an audio effect confirming it. Warmth comes from the
-    // reward chime (~300ms later) and, in Version C, spoken encouragement.
-    setState(() => _showReward = true);
-
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) AudioService.playReward();
+  void _pump(NamingEvent event) {
+    if (!mounted) return;
+    final prevScore = _fsm.score;
+    final effects = _fsm.handle(event);
+    // Fire the star-burst overlay on the score pill IF this event
+    // resolved into a Path Y (matched word). Score bumping alone isn't
+    // enough — Path X/Z also bump; the burst is Y-specific per Q6a.
+    final scoreBumped = _fsm.score > prevScore;
+    final justMatchedWord = scoreBumped && _fsm.lastPath == NamingPath.y;
+    setState(() {
+      if (justMatchedWord) _showStarBurst = true;
     });
-
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (!mounted) return;
-      setState(() {
-        _showReward = false;
-        _score++;
-        if (_currentIndex < _roundWords.length - 1) {
-          _currentIndex++;
-          Future.delayed(const Duration(milliseconds: 400), _speakCurrentWord);
-        } else {
-          _sessionComplete = true;
-          AudioService.playSessionComplete();
-          _recordProgress();
-        }
+    if (justMatchedWord) {
+      // Auto-hide the burst after the animation duration used by
+      // _ScorePill (400ms scale + 300ms fade @ 500ms delay = 800ms total).
+      Timer(const Duration(milliseconds: 900), () {
+        if (mounted) setState(() => _showStarBurst = false);
       });
+    }
+    _runEffects(effects);
+  }
+
+  Future<void> _runEffects(List<NamingEffect> effects) async {
+    for (final effect in effects) {
+      if (!mounted) return;
+      await _runEffect(effect);
+    }
+  }
+
+  Future<void> _runEffect(NamingEffect effect) async {
+    switch (effect) {
+      case PlayWordAudio(:final assetPath):
+        await AudioService.playWordAndWait(assetPath);
+        if (!mounted) return;
+        _pump(const AudioFinished());
+
+      case PlayFeedback(:final kindName):
+        final kind = _kindFrom(kindName);
+        if (kind == null) return;
+        await AudioService.playFeedback(kind);
+        if (!mounted) return;
+        _pumpAfterFeedback(kind);
+
+      case OpenEarlyListen(:final duration):
+        _openEarlyListen(duration);
+
+      case OpenListen(:final timeout):
+        _openListen(timeout);
+
+      case CloseMic():
+        _closeMic();
+
+      case Advance():
+        // The FSM already advanced internally; the resulting effects
+        // (PlayWordAudio for the next word) are enqueued after this in
+        // the same effect list. Nothing to do here.
+        break;
+
+      case ReplayCurrentWord():
+        await AudioService.playWordAndWait(_fsm.currentWord.audioAsset);
+        if (!mounted) return;
+        _pump(const RepromptFinished());
+
+      case SessionCompleted(:final score):
+        await _onSessionComplete(score);
+    }
+  }
+
+  /// After a feedback clip finishes, decide which FSM event to pump. The
+  /// choice is context-dependent because different clips serve different
+  /// FSM transitions.
+  void _pumpAfterFeedback(FeedbackKind kind) {
+    switch (kind) {
+      case FeedbackKind.promptNowYou:
+      case FeedbackKind.promptSayIt:
+        // Turn prompt done → SPEAK_PROMPT → LISTEN.
+        _pump(const AudioFinished());
+      case FeedbackKind.saidIt:
+      case FeedbackKind.saidItFirst:
+      case FeedbackKind.niceTry:
+      case FeedbackKind.good:
+        // Celebration done → advance to next word.
+        _pump(const CelebrationDone());
+      case FeedbackKind.promptLetsTry:
+        // "Let's try again" clip finished; the ReplayCurrentWord effect
+        // fires next in the queue and will pump RepromptFinished when
+        // the word replay itself ends.
+        break;
+    }
+  }
+
+  FeedbackKind? _kindFrom(String name) {
+    for (final k in FeedbackKind.values) {
+      if (k.name == name) return k;
+    }
+    return null;
+  }
+
+  // ── Mic control ───────────────────────────────────────────────────
+
+  void _openEarlyListen(Duration duration) {
+    _amplitudeAboveThresholdSince = null;
+    _speechSub?.cancel();
+    _speechSub = _stt.listen(timeout: duration).listen(_onEarlySpeechEvent);
+    _phaseTimer?.cancel();
+    _phaseTimer = Timer(duration, () {
+      if (!mounted) return;
+      if (_fsm.phase != NamingPhase.earlyListen) return;
+      _pump(const EarlyWindowExpired());
     });
   }
 
-  Future<void> _recordProgress() async {
-    // Fire-and-forget — a failed write is not worth blocking the celebration.
-    await ref.read(progressServiceProvider).recordRoundComplete(
-          wordsSpoken: _score,
-          category: widget.category,
-        );
-    if (mounted) ref.read(progressBumpProvider.notifier).state++;
+  void _openListen(Duration timeout) {
+    _speechSub?.cancel();
+    _speechSub = _stt.listen(timeout: timeout).listen(_onListenSpeechEvent);
+    _phaseTimer?.cancel();
+    _phaseTimer = Timer(timeout, () {
+      if (!mounted) return;
+      if (_fsm.phase != NamingPhase.listen) return;
+      _pump(const ListenTimedOut());
+    });
   }
+
+  void _closeMic() {
+    _speechSub?.cancel();
+    _speechSub = null;
+    _phaseTimer?.cancel();
+    _phaseTimer = null;
+    _stt.stop();
+    if (_micLevel != 0.0) {
+      setState(() => _micLevel = 0.0);
+    }
+  }
+
+  // ── Speech event handlers ─────────────────────────────────────────
+
+  void _onEarlySpeechEvent(SpeechEvent event) {
+    // Early-listen only cares about amplitude (Design B — 400ms window,
+    // amplitude-only detection). Transcripts are ignored here; the mic
+    // will re-open with full STT for the main listen phase.
+    if (event is AmplitudeEvent) {
+      _updateMicLevel(event.level);
+      _observeAmplitudeForSustain(event.level, () {
+        _pump(const EarlyVoiceDetected());
+      });
+    }
+  }
+
+  void _onListenSpeechEvent(SpeechEvent event) {
+    if (event is AmplitudeEvent) {
+      _updateMicLevel(event.level);
+    } else if (event is TranscriptEvent) {
+      // Rule E1 — act only on the final transcript.
+      if (!event.isFinal) return;
+      if (_fsm.phase != NamingPhase.listen) return;
+      final matched = NamingStateMachine.matchesTarget(
+        event.text,
+        _fsm.currentWord.word,
+      );
+      _pump(matched ? const VoiceMatched() : const VoiceUnmatched());
+    }
+  }
+
+  void _updateMicLevel(double level) {
+    // Small EMA to keep the glow from jittering with every packet.
+    const alpha = 0.4;
+    final smoothed = alpha * level + (1 - alpha) * _micLevel;
+    if ((smoothed - _micLevel).abs() < 0.02) return;
+    setState(() => _micLevel = smoothed);
+  }
+
+  /// Rule C1c — count amplitude spikes only when they sustain above
+  /// [_amplitudeThreshold] for [_sustainedDurationRequired] contiguous
+  /// milliseconds. Filters brief background spikes (car horns, coughs).
+  void _observeAmplitudeForSustain(double level, VoidCallback onSustained) {
+    final now = DateTime.now();
+    if (level >= _amplitudeThreshold) {
+      _amplitudeAboveThresholdSince ??= now;
+      final held = now.difference(_amplitudeAboveThresholdSince!);
+      if (held >= _sustainedDurationRequired) {
+        _amplitudeAboveThresholdSince = null;
+        onSustained();
+      }
+    } else {
+      _amplitudeAboveThresholdSince = null;
+    }
+  }
+
+  // ── Session complete ──────────────────────────────────────────────
+
+  Future<void> _onSessionComplete(int score) async {
+    // Path Y star-burst may still be showing from the last word; let it
+    // finish before firing the crowd cheer.
+    await AudioService.playSessionComplete();
+    if (!mounted) return;
+    // Record round completion (Rule 6a — score = engagements).
+    await ref.read(progressServiceProvider).recordRoundComplete(
+      wordsSpoken: score,
+      category: widget.category,
+    );
+    if (!mounted) return;
+    ref.read(progressBumpProvider.notifier).state++;
+  }
+
+  // ── Build ─────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -117,53 +321,17 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: _ProgressBar(
-          current: _currentIndex,
-          total: _roundWords.length,
+          current: _fsm.currentIndex,
+          total: _fsm.roundLength == 0 ? 6 : _fsm.roundLength,
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: const BoxDecoration(
-                  color: BoloColors.turmeric,
-                  borderRadius: BoloRadius.pillAll,
-                ),
-                child: Text(
-                  '⭐ $_score',
-                  style: BoloTypography.numericDisplay(
-                    size: 15,
-                    color: BoloColors.ink,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+        actions: [_ScorePill(score: _fsm.score, burst: _showStarBurst)],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth > 520;
-          Widget content;
-          if (_roundWords.isEmpty) {
-            content = _EmptyPoolView(category: widget.category);
-          } else if (_sessionComplete) {
-            content = _SessionCompleteView(
-              score: _score,
-              total: _roundWords.length,
-              onPlayAgain: () => setState(_loadRound),
-            );
-          } else {
-            content = _GameView(
-              word: _current,
-              showReward: _showReward,
-              onTap: _onTap,
-            );
-          }
+          final content = _buildContent();
           if (isWide) {
-            content = Center(
+            return Center(
               child: SizedBox(
                 width: BoloLayout.contentMaxWidth,
                 child: content,
@@ -175,23 +343,69 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
       ),
     );
   }
+
+  Widget _buildContent() {
+    // Bootstrap or empty-pool cases first.
+    if (_fsm.phase == NamingPhase.idle) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_fsm.roundLength == 0) {
+      return _EmptyPoolView(category: widget.category);
+    }
+    if (_fsm.phase == NamingPhase.sessionComplete) {
+      return _SessionCompleteView(
+        score: _fsm.score,
+        total: _fsm.roundLength,
+        onPlayAgain: () {
+          setState(() {
+            _fsm.phase = NamingPhase.idle;
+          });
+          _bootstrap();
+        },
+      );
+    }
+    return _GameView(
+      word: _fsm.currentWord,
+      phase: _fsm.phase,
+      micLevel: _micLevel,
+      onTap: _fsm.phase == NamingPhase.listen
+          ? () => _pump(const CardTapped())
+          : null,
+    );
+  }
 }
 
-// ── Game view (one word card) ─────────────────────────────────────
+// ── GameView — one word card + glow + hint ────────────────────────
 
 class _GameView extends StatelessWidget {
-  final WordEntry word;
-  final bool showReward;
-  final VoidCallback onTap;
+  final WordRef word;
+  final NamingPhase phase;
+  final double micLevel;
+  final VoidCallback? onTap;
 
   const _GameView({
     required this.word,
-    required this.showReward,
+    required this.phase,
+    required this.micLevel,
     required this.onTap,
   });
 
+  bool get _showGlow =>
+      phase == NamingPhase.listen || phase == NamingPhase.earlyListen;
+
+  bool get _showRewardBurst =>
+      phase == NamingPhase.celebY ||
+      phase == NamingPhase.celebX ||
+      phase == NamingPhase.celebZ ||
+      phase == NamingPhase.celebFirst;
+
   @override
   Widget build(BuildContext context) {
+    // Glow opacity — a soft base + amplitude-driven boost during listen.
+    final baseGlow = _showGlow ? 0.20 : 0.0;
+    final ampBoost = _showGlow ? (micLevel * 0.35) : 0.0;
+    final glowAlpha = (baseGlow + ampBoost).clamp(0.0, 0.7);
+
     return Column(
       children: [
         const SizedBox(height: 16),
@@ -203,14 +417,22 @@ class _GameView extends StatelessWidget {
             child: GestureDetector(
               onTap: onTap,
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color:
-                      showReward ? BoloColors.turmeric.withValues(alpha: 0.35) : Colors.white,
+                  color: Colors.white,
                   borderRadius: BoloRadius.xlAll,
-                  boxShadow: showReward
-                      ? BoloShadow.lift
-                      : BoloShadow.wordCard,
+                  boxShadow: [
+                    // Base soft card shadow — always present.
+                    ...BoloShadow.wordCard,
+                    // Amplitude-responsive saffron glow layered on top
+                    // when the mic is open. Fades to 0 when closed.
+                    if (glowAlpha > 0)
+                      BoxShadow(
+                        color: BoloColors.saffron.withValues(alpha: glowAlpha),
+                        blurRadius: 40,
+                        spreadRadius: 8,
+                      ),
+                  ],
                   border: Border.all(
                     color: BoloColors.turmeric.withValues(alpha: 0.35),
                     width: 3,
@@ -220,7 +442,7 @@ class _GameView extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     _WordImagePlaceholder(wordId: word.id),
-                    if (showReward)
+                    if (_showRewardBurst)
                       const _RewardBurst()
                           .animate()
                           .scale(
@@ -233,19 +455,13 @@ class _GameView extends StatelessWidget {
                   ],
                 ),
               ),
-            )
-                .animate(target: showReward ? 1 : 0)
-                .scale(
-                  begin: const Offset(1, 1),
-                  end: const Offset(1.04, 1.04),
-                  duration: 150.ms,
-                ),
+            ),
           ),
         ),
 
         const SizedBox(height: 24),
 
-        // ── Word label (English only at MVP) ─────────────────────
+        // ── Word label ───────────────────────────────────────────
         Text(
           word.word,
           style: BoloTypography.wordDisplay(color: BoloColors.saffron),
@@ -253,16 +469,8 @@ class _GameView extends StatelessWidget {
 
         const SizedBox(height: 16),
 
-        // ── Tap hint ─────────────────────────────────────────────
-        if (!showReward)
-          Text(
-            'Tap to say it! 👆',
-            style: BoloTypography.body(color: BoloColors.ink3)
-                .copyWith(fontSize: 14, fontWeight: FontWeight.w700),
-          )
-              .animate(onPlay: (c) => c.repeat(reverse: true))
-              .fadeIn(duration: 600.ms)
-              .fadeOut(delay: 600.ms, duration: 600.ms),
+        // ── Hint text (always visible, pops on entering listen) ──
+        _HintText(phase: phase),
 
         const SizedBox(height: 32),
       ],
@@ -270,41 +478,107 @@ class _GameView extends StatelessWidget {
   }
 }
 
-// ── Word image placeholder ────────────────────────────────────────
-
-class _WordImagePlaceholder extends StatelessWidget {
-  final String wordId;
-
-  const _WordImagePlaceholder({required this.wordId});
+/// Always-visible hint per Q1b + user's "open book" call. Pops with a
+/// gentle scale when entering the LISTEN phase so the child's eye
+/// notices "your turn is now" without the copy itself changing.
+class _HintText extends StatelessWidget {
+  final NamingPhase phase;
+  const _HintText({required this.phase});
 
   @override
   Widget build(BuildContext context) {
-    // Falls back to the generated map. This is a *placeholder* — the real
-    // deliverable is a Rive 2D animation per word (elephant trunk swing,
-    // lion mouth-open + roar, etc). Track in ART todo.
-    //
-    // FittedBox scales the glyph to fill whatever the card gives us so the
-    // emoji dominates the card visually (a small fontSize inside a huge
-    // card felt lost). Padding keeps the glyph off the card border.
-    final emoji = wordEmoji[wordId] ?? '🎯';
+    final text = Text(
+      '🎤 Say it, or tap!',
+      style: BoloTypography.body(color: BoloColors.ink3)
+          .copyWith(fontSize: 14, fontWeight: FontWeight.w700),
+    );
+    if (phase == NamingPhase.listen) {
+      // Pop-in bounce every time we (re-)enter listen — the animate key
+      // ties to the phase so re-prompt-into-listen retriggers it.
+      return text
+          .animate(key: const ValueKey('hint-listen'))
+          .scale(
+            begin: const Offset(0.9, 0.9),
+            end: const Offset(1.0, 1.0),
+            duration: 200.ms,
+            curve: Curves.elasticOut,
+          );
+    }
+    return text;
+  }
+}
+
+/// Score pill on the AppBar. When a Path Y win comes in, a ⭐ overlay
+/// bursts out of the pill (Q6a — visual weight, no math change).
+class _ScorePill extends StatelessWidget {
+  final int score;
+  final bool burst;
+  const _ScorePill({required this.score, required this.burst});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24),
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: Text(
-          emoji,
-          style: const TextStyle(fontSize: 200),
+      padding: const EdgeInsets.only(right: 16),
+      child: Center(
+        child: Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: const BoxDecoration(
+                color: BoloColors.turmeric,
+                borderRadius: BoloRadius.pillAll,
+              ),
+              child: Text(
+                '⭐ $score',
+                style: BoloTypography.numericDisplay(
+                  size: 15,
+                  color: BoloColors.ink,
+                ),
+              ),
+            ),
+            if (burst)
+              const Positioned(
+                child: Text('⭐', style: TextStyle(fontSize: 28)),
+              )
+                  .animate()
+                  .scale(
+                    begin: const Offset(0.5, 0.5),
+                    end: const Offset(1.8, 1.8),
+                    duration: 400.ms,
+                    curve: Curves.elasticOut,
+                  )
+                  .fadeOut(delay: 500.ms, duration: 300.ms),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Empty pool view (safety net) ──────────────────────────────────
-//
-// Rendered when the age × category pool is empty. Shouldn't happen in
-// production — the repository widens the pool before we hit this — but it
-// keeps the app from crashing while content grows.
+// ── Emoji placeholder (scales to fill the card) ───────────────────
+
+class _WordImagePlaceholder extends StatelessWidget {
+  final String wordId;
+  const _WordImagePlaceholder({required this.wordId});
+
+  @override
+  Widget build(BuildContext context) {
+    // FittedBox scales the glyph to fill the card so a small emoji
+    // isn't lost inside the big white surface.
+    final emoji = wordEmoji[wordId] ?? '🎯';
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Text(emoji, style: const TextStyle(fontSize: 200)),
+      ),
+    );
+  }
+}
+
+// ── Empty pool ─────────────────────────────────────────────────────
 
 class _EmptyPoolView extends StatelessWidget {
   final String? category;
@@ -340,15 +614,13 @@ class _EmptyPoolView extends StatelessWidget {
   }
 }
 
-// ── Reward burst ──────────────────────────────────────────────────
+// ── Reward burst (⭐ on the card, per Path Y celebration) ──────────
 
 class _RewardBurst extends StatelessWidget {
   const _RewardBurst();
-
   @override
-  Widget build(BuildContext context) {
-    return const Text('⭐', style: TextStyle(fontSize: 72));
-  }
+  Widget build(BuildContext context) =>
+      const Text('⭐', style: TextStyle(fontSize: 72));
 }
 
 // ── Progress bar ──────────────────────────────────────────────────
@@ -356,7 +628,6 @@ class _RewardBurst extends StatelessWidget {
 class _ProgressBar extends StatelessWidget {
   final int current;
   final int total;
-
   const _ProgressBar({required this.current, required this.total});
 
   @override
@@ -386,13 +657,12 @@ class _ProgressBar extends StatelessWidget {
   }
 }
 
-// ── Session complete view ─────────────────────────────────────────
+// ── Session complete ──────────────────────────────────────────────
 
 class _SessionCompleteView extends StatelessWidget {
   final int score;
   final int total;
   final VoidCallback onPlayAgain;
-
   const _SessionCompleteView({
     required this.score,
     required this.total,
