@@ -282,9 +282,20 @@ class _WordImagePlaceholder extends StatelessWidget {
     // Falls back to the generated map. This is a *placeholder* — the real
     // deliverable is a Rive 2D animation per word (elephant trunk swing,
     // lion mouth-open + roar, etc). Track in ART todo.
+    //
+    // FittedBox scales the glyph to fill whatever the card gives us so the
+    // emoji dominates the card visually (a small fontSize inside a huge
+    // card felt lost). Padding keeps the glyph off the card border.
     final emoji = wordEmoji[wordId] ?? '🎯';
-    return Center(
-      child: Text(emoji, style: const TextStyle(fontSize: 120)),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Text(
+          emoji,
+          style: const TextStyle(fontSize: 200),
+        ),
+      ),
     );
   }
 }
