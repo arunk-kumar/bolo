@@ -70,9 +70,9 @@ class _NamingGameScreenState extends ConsumerState<NamingGameScreen> {
 
   void _onTap() {
     if (_showReward || _sessionComplete) return;
-    // Fire-and-forget — audio initialises from this gesture handler,
-    // satisfying the browser's user-gesture policy on Flutter web.
-    AudioService.playTap();
+    // Tap itself is silent — the tap is the child's action, not something
+    // that needs an audio effect confirming it. Warmth comes from the
+    // reward chime (~300ms later) and, in Version C, spoken encouragement.
     setState(() => _showReward = true);
 
     Future.delayed(const Duration(milliseconds: 300), () {
