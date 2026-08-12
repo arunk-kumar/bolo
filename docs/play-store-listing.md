@@ -129,8 +129,10 @@ via macOS `Cmd+Shift+4` targeting the browser viewport.
 
 If Play asks about the microphone specifically:
 - **Do you collect audio data?** → **No** — the mic is used for
-  on-device sound-presence detection only. Audio is not recorded,
-  stored, or transmitted.
+  on-device speech interaction only (word matching and sound-presence
+  detection). Audio is not recorded, stored, or transmitted at any
+  point. All recognition runs on the child's device using the OS
+  built-in offline speech recognizer.
 
 ---
 
